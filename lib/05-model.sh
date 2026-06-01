@@ -217,5 +217,5 @@ _detect_model() {
     [[ "$SERVER_HELP" == *"--reasoning"* ]] && SUPPORTS_REASONING_FLAG=1
 
     (( IS_IK_LLAMA )) && echo "Backend: ik_llama.cpp (graph split enabled)" || echo "Backend: llama.cpp (mainline)"
-    BACKEND_TAG="llama"; (( IS_IK_LLAMA )) && BACKEND_TAG="ik"
+    BACKEND_TAG="llama"; (( IS_IK_LLAMA )) && BACKEND_TAG="ik" || true
 }

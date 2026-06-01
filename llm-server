@@ -56,7 +56,9 @@
 #   LLM_PORT        Server port (default: 8081)
 #   LLM_CTX_SIZE    Context size (default: 65536)
 
-set -euo pipefail
+# Note: -e dropped — (( 0 )) && … returns exit code 1 which set -e kills.
+# Explicit exit/return calls handle errors; -uo pipefail kept for safety.
+set -uo pipefail
 
 # ═══════════════════════════════════════════════════════════════
 # 0. Resolve paths (needed before anything else)
@@ -453,11 +455,10 @@ _main_launch() {
         export LLM_SERVER_UPDATE_CHECKED=1
     fi
 
-    # Run two-phase benchmark (if --benchmark)
-    if (( BENCHMARK )); then run_two_phase_benchmark; BENCHMARK=0; fi
-
-    # Maybe AI Tune launch flags
-    maybe_ai_tune_launch_flags "${COMMON_FLAGS[@]}"
+    # Maybe AI Tune launch flags (skip in dry-run / benchmark modes)
+    if (( ! DRY_RUN && ! BENCHMARK && ! DO_CONVERGE )); then
+        maybe_ai_tune_launch_flags "${COMMON_FLAGS[@]}"
+    fi
 
     # Kill any existing server on this port
     kill_server ""

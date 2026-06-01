@@ -6,6 +6,9 @@
 # All detection is wrapped in _detect_hardware() — called from main entry
 # after GPU_COUNT, CPU_ONLY, RAM_BUDGET_MB, GPUS_FILTER are known.
 
+# ── Global GPU arrays (must be top-level — declare inside a function makes them local) ──
+declare -a GPU_INDEX=() GPU_NAME=() GPU_VRAM_TOTAL=() GPU_VRAM_FREE=() GPU_PCIE_WIDTH=() GPU_PCIE_GEN=() GPU_BANDWIDTH=() GPU_COMPUTE_CAP=() GPU_ORDER=()
+
 # ── Update check constants ─────────────────────────────────────
 LLM_SERVER_REPO="${LLM_SERVER_REPO:-$HOME/llm-server}"
 UPDATE_DISMISS_FILE="$CACHE_DIR/update_dismissed"
@@ -64,8 +67,6 @@ _detect_hardware() {
 
     # Detect GPUs
     GPU_COUNT=0
-    declare -a GPU_INDEX GPU_NAME GPU_VRAM_TOTAL GPU_VRAM_FREE GPU_PCIE_WIDTH GPU_PCIE_GEN GPU_BANDWIDTH GPU_COMPUTE_CAP
-
     if (( CPU_ONLY )); then
         echo "GPUs: skipped (--cpu flag)"
     elif command -v nvidia-smi &>/dev/null; then
@@ -267,13 +268,10 @@ _detect_hardware() {
         echo "GPUs: none detected (CPU-only mode)"
     else
         echo "GPUs: $GPU_COUNT detected"
-        declare -a GPU_ORDER
-        GPU_ORDER=($(
-            for i in $(seq 0 $(( GPU_COUNT - 1 ))); do
+        GPU_ORDER=($(for i in $(seq 0 $(( GPU_COUNT - 1 ))); do
                 cc_int=$(awk "BEGIN{printf \"%d\", ${GPU_COMPUTE_CAP[$i]:-0}*10}")
                 printf "%d %d %d %d\n" "${GPU_BANDWIDTH[$i]}" "${GPU_VRAM_TOTAL[$i]}" "$cc_int" "$i"
-            done | sort -k1,1rn -k2,2rn -k3,3rn | awk '{print $NF}'
-        ))
+            done | sort -k1,1rn -k2,2rn -k3,3rn | awk '{print $NF}'))
         for i in $(seq 0 $(( GPU_COUNT - 1 ))); do
             gi=${GPU_ORDER[$i]}
             echo "  GPU${GPU_INDEX[$gi]}: ${GPU_NAME[$gi]} ${GPU_VRAM_FREE[$gi]}MB free / ${GPU_VRAM_TOTAL[$gi]}MB total (PCIe x${GPU_PCIE_WIDTH[$gi]} gen${GPU_PCIE_GEN[$gi]})"
